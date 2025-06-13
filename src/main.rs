@@ -174,10 +174,8 @@ async fn episodes_page(State(store): State<RecommendationsStore>) -> Html<String
                 <select id='type_media-global' name='type_media' required>
                     <option value='film'>Film</option>
                     <option value='livre'>Livre</option>
-                    <option value='chaine youtube'>Chaîne YouTube</option>
-                    <option value='chaine twitch'>Chaîne Twitch</option>
-                    <option value='compte instagram'>Compte Instagram</option>
-                    <option value='compte tiktok'>Compte TikTok</option>
+                    <option value='chaine'>Chaîne</option>
+                    <option value='compte'>Compte</option>
                     <option value='musique'>Musique</option>
                     <option value='série'>Série</option>
                     <option value='jeu'>Jeu</option>
@@ -202,7 +200,7 @@ async fn episodes_page(State(store): State<RecommendationsStore>) -> Html<String
         let safe_title = htmlescape::encode_minimal(&raw_title);
         let safe_title_attr = safe_title.replace("\"", "&quot;").replace("'", "&#39;");
         // Nettoie la description (supprime CDATA, conserve le HTML)
-        let desc = ep.description
+        let mut desc = ep.description
             .replace("<![CDATA[", "")
             .replace("]]>" , "")
             .replace("&nbsp;", " ")
@@ -212,6 +210,11 @@ async fn episodes_page(State(store): State<RecommendationsStore>) -> Html<String
             .replace("&gt;", ">")
             .trim()
             .to_string();
+        // Supprime la mention Acast si présente
+        if let Some(idx) = desc.find("Hébergé par Acast") {
+            desc.truncate(idx);
+            desc = desc.trim_end().to_string();
+        }
         let img_tag = if ep.image_url.contains("placeholder.com") {
             String::new()
         } else {
@@ -264,7 +267,7 @@ async fn episodes_page(State(store): State<RecommendationsStore>) -> Html<String
                     htmlescape::encode_minimal(&rec.titre)
                 };
                 format!(
-                    "<div class='reco-card' style='background:#f7faff;border-radius:18px;padding:1.2em 1.3em 1.1em 1.3em;margin-bottom:1.1em;box-shadow:0 2px 8px #0001;position:relative;overflow:hidden;'>\
+                    "<div class='reco-card' style='background:#eaf6fb;border-radius:18px;padding:1.2em 1.3em 1.1em 1.3em;margin-bottom:1.1em;box-shadow:0 2px 8px #0001;position:relative;overflow:hidden;'>\
                         <div class='reco-header' style='display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5em;'>\
                             <div style='flex:1;display:flex;align-items:center;gap:0.7em;'>\
                                 {chroniqueurs_html}\
