@@ -221,62 +221,150 @@ async fn episodes_page(State(store): State<RecommendationsStore>) -> Html<String
         // Utilise le titre nettoyé comme clé pour le HashMap
         let recos_html = map.get(&raw_title).map(|v| {
             v.iter().enumerate().map(|(idx, rec)| {
-                let chroniqueurs = htmlescape::encode_minimal(&rec.chroniqueurs.join(", "));
-                let titre = if let Some(lien) = &rec.lien {
-                    format!("<a href=\"{}\" target=\"_blank\">{}</a>", htmlescape::encode_attribute(lien), htmlescape::encode_minimal(&rec.titre))
+                // Catégories courtes et fusionnées
+                let type_label = match rec.type_media.to_lowercase().as_str() {
+                    "film" => "Film",
+                    "livre" => "Livre",
+                    "chaine youtube" | "chaine twitch" => "Chaîne",
+                    "compte instagram" | "compte tiktok" => "Compte",
+                    "musique" => "Musique",
+                    "série" => "Série",
+                    "jeu" => "Jeu",
+                    _ => "Autre",
+                };
+                let chroniqueurs_html = format!(
+                    "<span style='color:#9147ff;font-size:0.97em;font-style:italic;font-weight:600;border-radius:8px;padding:0.13em 0.7em 0.13em 0.7em;min-width:70px;text-align:left;letter-spacing:0.01em;background:none;'>{}</span>",
+                    htmlescape::encode_minimal(&rec.chroniqueurs.join(", "))
+                );
+                let type_color = match type_label {
+                    "Film" => "#ffb347",
+                    "Livre" => "#a3d977",
+                    "Chaîne" => "#ff5e5e",
+                    "Compte" => "#e1306c",
+                    "Musique" => "#1db954",
+                    "Série" => "#4a90e2",
+                    "Jeu" => "#f6c3ff",
+                    _ => "#b88a2a",
+                };
+                let type_bulle = format!(
+                    "<span class='reco-type' style='background:{};color:#fff;font-size:1em;font-style:normal;margin-left:0.1em;border-radius:50px;padding:0.18em 1.2em;box-shadow:0 2px 8px #0001;display:inline-block;letter-spacing:0.01em;min-width:70px;text-align:center;font-weight:600;vertical-align:middle;'>{}</span>",
+                    type_color, type_label
+                );
+                let desc_compact = format!(
+                    "<div class='reco-desc' style='font-size:0.98em;color:#222;line-height:1.4;margin:0.5em 0 0.1em 0;padding-left:0.2em;font-family:sans-serif;font-style:normal;'>{}</div>",
+                    htmlescape::encode_minimal(&rec.description)
+                );
+                let titre_html = if let Some(lien) = &rec.lien {
+                    if !lien.trim().is_empty() {
+                        format!("<a href='{}' target='_blank' style='color:#222;text-decoration:underline;display:inline-flex;align-items:center;gap:0.2em;'><span>{}</span><span style='font-size:1em;opacity:0.7;margin-left:0.1em;display:inline-block;vertical-align:middle;'><svg width='1em' height='1em' viewBox='0 0 20 20' fill='none' style='display:block;' xmlns='http://www.w3.org/2000/svg'><path d='M7 13L13 7M13 7H8M13 7V12' stroke='#4a90e2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg></span></a>", htmlescape::encode_minimal(lien), htmlescape::encode_minimal(&rec.titre))
+                    } else {
+                        htmlescape::encode_minimal(&rec.titre)
+                    }
                 } else {
                     htmlescape::encode_minimal(&rec.titre)
                 };
                 format!(
-                    "<div class='reco-card' style='background:#f8f8f8;border-radius:10px;padding:0.8em 1em;margin-bottom:0.7em;box-shadow:0 1px 6px #0001;'>\
-                        <div class='reco-header' style='display:flex;align-items:center;justify-content:space-between;'>\
-                            <div><b>{titre}</b> <span class='reco-type' style='color:#b88;font-size:0.95em;'>[{type_media}]</span></div>\
-                            <button class='delete-reco-btn' data-ep='{data_ep}' data-idx='{idx}' title='Supprimer' style='background:none;border:none;color:#c00;font-size:1.2em;cursor:pointer;'>&#10006;</button>\
+                    "<div class='reco-card' style='background:#f7faff;border-radius:18px;padding:1.2em 1.3em 1.1em 1.3em;margin-bottom:1.1em;box-shadow:0 2px 8px #0001;position:relative;overflow:hidden;'>\
+                        <div class='reco-header' style='display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5em;'>\
+                            <div style='flex:1;display:flex;align-items:center;gap:0.7em;'>\
+                                {chroniqueurs_html}\
+                                <div style='flex:1;text-align:center;'>{titre_html}</div>\
+                                {type_bulle}\
+                            </div>\
+                            <button class='delete-reco-btn' data-ep='{data_ep}' data-idx='{idx}' title='Supprimer' style='background:none;border:none;color:#c00;font-size:1.2em;cursor:pointer;'><span style='font-size:1.2em;'>&#10006;</span></button>\
                         </div>\
-                        <div class='reco-chroniqueurs' style='color:#666;font-size:0.97em;margin-bottom:0.2em;'>{chroniqueurs}</div>\
-                        <div class='reco-desc' style='font-size:0.98em;'>{description}</div>\
+                        {desc_compact}\
                     </div>",
                     idx=idx,
-                    titre=titre,
-                    type_media=htmlescape::encode_minimal(&rec.type_media),
+                    titre_html=titre_html,
+                    type_bulle=type_bulle,
                     data_ep=&data_ep,
-                    chroniqueurs=chroniqueurs,
-                    description=htmlescape::encode_minimal(&rec.description)
+                    chroniqueurs_html=chroniqueurs_html,
+                    desc_compact=desc_compact
                 )
             }).collect::<String>()
         }).unwrap_or_default();
         let show_recos_btn = if !recos_html.is_empty() {
-            format!("<button class='show-recos-btn' data-ep='{}'>Voir les recommandations</button>", data_ep)
+            format!(
+                "<button class='show-recos-btn' data-ep='{}' title='Voir les recommandations' style='display:flex;align-items:center;gap:0.4em;background:none;border:none;color:#4a90e2;font-size:0.98em;line-height:1.1;cursor:pointer;padding:0.18em 0.7em 0.18em 0.7em;border-radius:50px;transition:background 0.15s;min-height:2.1em;'>\
+                    <span style='display:inline-block;transition:transform 0.2s;vertical-align:middle;width:1.2em;height:1.2em;'>\
+                        <svg width='1em' height='1em' viewBox='0 0 20 20' fill='none' style='display:block;margin:auto;' xmlns='http://www.w3.org/2000/svg'><circle cx='10' cy='10' r='9' stroke='#4a90e2' stroke-width='2' fill='none'/><polyline points='7,8 10,12 13,8' fill='none' stroke='#4a90e2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>\
+                    </span>\
+                    <span style='font-size:1em;vertical-align:middle;'>Recommandations</span>\
+                </button>",
+                data_ep
+            )
         } else {
             String::new()
         };
         let recos_block = if !recos_html.is_empty() {
-            format!("<div class='recos' data-ep='{}' style='margin-top:1em'>{}</div>", data_ep, recos_html)
+            format!("<div class='recos' data-ep='{}' style='margin-top:1em;font-size:0.93em;'>{}</div>", data_ep, recos_html)
         } else {
             String::new()
         };
         let titre_affiche = if raw_title.trim().is_empty() { "Épisode sans titre".to_string() } else { safe_title.clone() };
         cards.push_str(&format!(
-            "<div class='card'>
-                <div class='card-top' style='display:flex;align-items:center;gap:1em;'>
-                    <div class='img-col'>{img}</div>
-                    <div class='info-col' style='flex:1;'>
-                        <div style='font-weight:bold;font-size:1.1em'>{titre}</div>
-                        <div class='date' style='color:#888;font-size:0.95em'>{date}</div>
-                    </div>
-                </div>
-                <div class='desc' style='margin-top:0.7em'>{desc}</div>
-                {show_recos_btn}
-                {recos_block}
+            "<div class='card' style='background:#f3f6fa;border-radius:22px;box-shadow:0 2px 12px #0001;padding:1.2em 1.1em 1.2em 1.1em;margin-bottom:1.5em;'>\
+                <div class='card-top' style='display:flex;align-items:center;gap:1em;'>\
+                    <div class='img-col'>{img}</div>\
+                    <div class='info-col' style='flex:1;'>\
+                        <div style='font-weight:bold;font-size:1.1em'>{titre}</div>\
+                        <div class='date' style='color:#888;font-size:0.95em'>{date}</div>\
+                    </div>\
+                </div>\
+                <div class='desc' style='margin-top:0.7em'>{desc}</div>\
+                {show_recos_btn}\
+                {recos_block}\
             </div>",
             img=img_tag,
             titre=titre_affiche,
             date=htmlescape::encode_minimal(&ep.date),
-            desc=desc, // description HTML non échappée
+            desc=desc,
             show_recos_btn=show_recos_btn,
             recos_block=recos_block
         ));
     }
+    // JS pour la suppression dynamique des recommandations (DOM + backend)
+    let js = r#"
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Toggle recommendations display
+        document.querySelectorAll('.show-recos-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var ep = btn.getAttribute('data-ep');
+                var recos = document.querySelector(".recos[data-ep='"+ep+"']");
+                if(recos) {
+                    var isOpen = recos.style.display === 'block';
+                    // Ferme tous les autres recos
+                    document.querySelectorAll('.recos').forEach(function(r){ r.style.display = 'none'; });
+                    document.querySelectorAll('.show-recos-btn svg').forEach(function(svg){ svg.style.transform = ''; });
+                    if(!isOpen) {
+                        recos.style.display = 'block';
+                        var svg = btn.querySelector('svg');
+                        if(svg) svg.style.transform = 'rotate(180deg)';
+                    }
+                }
+            });
+        });
+        // Suppression dynamique d'une recommandation
+        document.addEventListener('click', function(e) {
+            if(e.target && e.target.closest('.delete-reco-btn')) {
+                var btn = e.target.closest('.delete-reco-btn');
+                var ep = btn.getAttribute('data-ep');
+                var idx = btn.getAttribute('data-idx');
+                fetch('/delete_reco', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'episode_title=' + encodeURIComponent(ep) + '&idx=' + encodeURIComponent(idx)
+                }).then(r => r.ok ? Promise.resolve() : Promise.reject()).then(() => {
+                    var recoCard = btn.closest('.reco-card');
+                    if(recoCard) recoCard.remove();
+                });
+            }
+        });
+    });
+    </script>
+    "#;
     Html(format!(
         r#"
         <!DOCTYPE html>
@@ -287,37 +375,6 @@ async fn episodes_page(State(store): State<RecommendationsStore>) -> Html<String
             <title>Portes à Potes - Recommandations</title>
             <link rel=\"stylesheet\" href=\"/static/styles.css\">
             <script src=\"/static/scripts.js\" defer></script>
-            <script>
-                document.addEventListener('DOMContentLoaded', function() {{
-                    var openBtn = document.getElementById('open-global-reco-modal');
-                    var modalBg = document.getElementById('global-reco-modal');
-                    var closeBtn = modalBg ? modalBg.querySelector('.close-modal') : null;
-                    if (openBtn && modalBg) {{
-                        openBtn.addEventListener('click', function() {{
-                            modalBg.style.display = 'flex';
-                            modalBg.style.visibility = 'visible';
-                            modalBg.setAttribute('aria-hidden', 'false');
-                        }});
-                    }}
-                    if (closeBtn && modalBg) {{
-                        closeBtn.addEventListener('click', function() {{
-                            modalBg.style.display = 'none';
-                            modalBg.style.visibility = 'hidden';
-                            modalBg.setAttribute('aria-hidden', 'true');
-                        }});
-                    }}
-                    // Fermer le modal si on clique sur le fond
-                    if (modalBg) {{
-                        modalBg.addEventListener('click', function(e) {{
-                            if (e.target === modalBg) {{
-                                modalBg.style.display = 'none';
-                                modalBg.style.visibility = 'hidden';
-                                modalBg.setAttribute('aria-hidden', 'true');
-                            }}
-                        }});
-                    }}
-                }});
-            </script>
             <style>
                 body {{
                     min-height: 100vh;
@@ -326,6 +383,7 @@ async fn episodes_page(State(store): State<RecommendationsStore>) -> Html<String
                     position: relative;
                     overflow-x: hidden;
                 }}
+                .recos {{ display: none; }}
                 .background-blur {{
                     position: fixed;
                     top: 0; left: 0; right: 0; bottom: 0;
@@ -504,6 +562,20 @@ async fn episodes_page(State(store): State<RecommendationsStore>) -> Html<String
                     display: block;
                     margin: 0;
                 }}
+                .show-recos-btn {{
+                    background: none;
+                    border: none;
+                    color: #4a90e2;
+                    font-size: 1.5em;
+                    line-height: 1;
+                    cursor: pointer;
+                    padding: 0.2em 0.5em;
+                    border-radius: 50%;
+                    transition: background 0.15s;
+                }}
+                .show-recos-btn:hover {{
+                    background: #eaf3fa;
+                }}
             </style>
         </head>
         <body>
@@ -536,11 +608,13 @@ async fn episodes_page(State(store): State<RecommendationsStore>) -> Html<String
                     <p>&copy; 2023 Portes à Potes. Tous droits réservés.</p>
                 </footer>
             </div>
+            {js}
         </body>
         </html>
         "#,
         global_modal=global_modal,
-        cards=cards
+        cards=cards,
+        js=js
     ))
 }
 
