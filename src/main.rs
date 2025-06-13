@@ -328,6 +328,31 @@ async fn episodes_page(State(store): State<RecommendationsStore>) -> Html<String
     let js = r#"
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Ouvre le modal d'ajout de reco
+        var openModalBtn = document.getElementById('open-global-reco-modal');
+        var modalBg = document.getElementById('global-reco-modal');
+        if(openModalBtn && modalBg) {
+            openModalBtn.addEventListener('click', function() {
+                modalBg.style.display = 'flex';
+                modalBg.style.visibility = 'visible';
+                modalBg.setAttribute('aria-hidden', 'false');
+            });
+            // Ferme le modal avec la croix
+            var closeBtn = modalBg.querySelector('.close-modal');
+            if(closeBtn) closeBtn.addEventListener('click', function() {
+                modalBg.style.display = 'none';
+                modalBg.style.visibility = 'hidden';
+                modalBg.setAttribute('aria-hidden', 'true');
+            });
+            // Ferme le modal en cliquant sur le fond
+            modalBg.addEventListener('click', function(e) {
+                if(e.target === modalBg) {
+                    modalBg.style.display = 'none';
+                    modalBg.style.visibility = 'hidden';
+                    modalBg.setAttribute('aria-hidden', 'true');
+                }
+            });
+        }
         // Toggle recommendations display
         document.querySelectorAll('.show-recos-btn').forEach(function(btn) {
             btn.addEventListener('click', function() {
@@ -362,6 +387,24 @@ async fn episodes_page(State(store): State<RecommendationsStore>) -> Html<String
                 });
             }
         });
+        // Soumission AJAX du formulaire d'ajout de reco
+        var addRecoForm = document.querySelector('.reco-form');
+        if (addRecoForm) {
+            addRecoForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var form = this;
+                var data = new URLSearchParams(new FormData(form));
+                fetch('/add_reco', {
+                    method: 'POST',
+                    body: data,
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }).then(function() {
+                    window.location.reload();
+                });
+            });
+        }
     });
     </script>
     "#;

@@ -1,4 +1,27 @@
 {
+  "PAP S2/E5 - Tamponne-moi": [],
+  "PAP S2/E6 - Bienvenue chez mcdonalds": [
+    {
+      "chroniqueurs": [
+        "Jean"
+      ],
+      "titre": "Tintin en amérique",
+      "lien": "https://www.amazon.fr/Tintin-en-Am%C3%A9rique-Herg%C3%A9/dp/220300102X/ref=asc_df_220300102X?mcid=9f6fabf9d67a3783aebaeaf0e075c8a4&tag=googshopfr-21&linkCode=df0&hvadid=701530070087&hvpos=&hvnetw=g&hvrand=12067749143838288702&hvpone=&hvptwo=&hvqmt=&hvdev=c&hvdvcmdl=&hvlocint=&hvlocphy=1006219&hvtargid=pla-566213129983&psc=1&hvocijid=12067749143838288702-220300102X-&hvexpln=0",
+      "type_media": "livre",
+      "description": "c'est fou les hisotires de ce reporter n'mepeche. Il est roux ET Belege je sais pa s si onse rend compte"
+    }
+  ],
+  "PAP S2/E2 - Tour du mondeee": [
+    {
+      "chroniqueurs": [
+        "Marc"
+      ],
+      "titre": "Fouuu la folie",
+      "lien": "https://spotify.com",
+      "type_media": "série",
+      "description": "nonn riament c'est du poulet ce que je peropose"
+    }
+  ],
   "PAP S2/E7 - Gnocchis, cordons bleus, purée": [
     {
       "chroniqueurs": [
@@ -9,7 +32,5 @@
       "type_media": "film",
       "description": "\"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\""
     }
-  ],
-  "PAP S2/E6 - Bienvenue chez mcdonalds": [],
-  "PAP S2/E5 - Tamponne-moi": []
+  ]
 }
