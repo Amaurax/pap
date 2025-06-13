@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang='fr'>
+<head>
+    <meta charset='UTF-8'>
+    <title>Pap le site</title>
+    <style>
+        body{
+    font-family:sans-serif;
+    background:#f4f4f4;
+    margin:0;padding:0;min-height:100vh;
+    display:flex;flex-direction:column;align-items:center;
+    position:relative;
+}
+body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: url('https://assets.pippa.io/shows/cover/1678196289243-eb4dc05a818625489cad37a30940fd3b.jpeg') center center/cover no-repeat fixed;
+    filter: blur(10px) brightness(0.7);
+    z-index: 0;
+}
+        h1{text-align:center;}
+        .main-container{width:100%;display:flex;flex-direction:column;align-items:center;position:relative;z-index:1;}
+        .cards{display:flex;flex-direction:column;align-items:center;gap:1.2rem;width:100%;position:relative;z-index:1;}
+        .card{background:#fff;border-radius:12px;box-shadow:0 2px 8px #0001;max-width:700px;min-width:340px;width:100%;padding:1.2rem 1.2rem 1.1rem 1.2rem;margin:1.1rem;display:flex;flex-direction:column;align-items:stretch;position:relative;z-index:1;}
+        .card-top{display:flex;flex-direction:row;align-items:center;gap:1.2rem;margin-bottom:0.7rem;}
+        .img-col{flex:0 0 auto;}
+        .info-col{flex:1 1 0;display:flex;flex-direction:column;align-items:flex-start;}
+        .card img.episode-img{width:140px;height:140px;object-fit:contain;object-position:center;border-radius:8px;background:#eee;box-shadow:0 1px 4px #0002;}
+        .card h2{font-size:1.3rem;margin:0 0 0.3rem 0;}
+        .card .date{color:#888;font-size:1rem;margin-bottom:0.2rem;}
+        .card .desc{font-size:1.05rem;white-space:pre-line;flex:1 1 0;overflow:visible;max-height:none;padding-right:0.3rem;}
+        .reco{background:#f7f7fa;border-left:4px solid #4a90e2;padding:0.7em 1em;margin:0.7em 0;border-radius:8px;box-shadow:0 1px 4px #0001;}
+        .reco-type{color:#4a90e2;font-weight:bold;}
+        .reco-desc{display:block;margin-top:0.3em;}
+        .add-reco-btn{margin-top:1em;padding:0.5em 1.2em;background:#4a90e2;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:1em;transition:background 0.2s;}
+        .add-reco-btn:hover{background:#357ab8;}
+        /* Modal styles */
+        .modal-bg{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;z-index:1000;}
+        .modal{background:#fff;padding:2em 2em 1.5em 2em;border-radius:12px;box-shadow:0 4px 24px #0003;min-width:320px;max-width:90vw;position:relative;z-index:1;}
+        .modal h3{margin-top:0;}
+        .modal .close-modal{position:absolute;top:0.7em;right:1em;background:none;border:none;font-size:1.5em;cursor:pointer;color:#888;}
+        .reco-form label{display:block;margin-top:0.7em;font-weight:bold;}
+        .reco-form input, .reco-form textarea, .reco-form select{width:100%;margin-top:0.2em;margin-bottom:0.5em;padding:0.5em;border-radius:5px;border:1px solid #bbb;font-size:1em;}
+        .reco-form textarea{resize:vertical;min-height:60px;}
+        .reco-form button[type=submit]{margin-top:1em;background:#4a90e2;color:#fff;border:none;border-radius:6px;padding:0.6em 1.5em;font-size:1em;cursor:pointer;}
+        .reco-form button[type=submit]:hover{background:#357ab8;}
+        .reco-confirm{color:green;font-weight:bold;margin-top:0.7em;}
+        .show-recos-btn{margin-top:0.7em;background:none;border:none;color:#4a90e2;cursor:pointer;font-size:1em;text-decoration:underline;}
+    </style>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Modal global
+        var openBtn = document.getElementById('open-global-reco-modal');
+        var modal = document.getElementById('global-reco-modal');
+        if(openBtn && modal) {
+            openBtn.addEventListener('click', function() {
+                modal.style.display = 'flex';
+                modal.style.visibility = 'visible';
+            });
+            modal.querySelector('.close-modal').addEventListener('click', function() {
+                modal.style.display = 'none';
+                modal.style.visibility = 'hidden';
+            });
+            modal.querySelector('form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                var form = this;
+                var data = new URLSearchParams(new FormData(form));
+                var episodeTitle = form.querySelector('[name="episode_title"]').value;
+                fetch('/add_reco', {
+                    method: 'POST',
+                    body: data,
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }).then(r => r.text()).then(html => {
+                    form.querySelector('.reco-confirm').textContent = 'Recommandation enregistrée !';
+                    // Injection dynamique dans la bonne carte
+                    var recosBlock = document.querySelector('.recos[data-ep="'+episodeTitle+'"]');
+                    if(recosBlock) {
+                        recosBlock.insertAdjacentHTML('beforeend', html);
+                        recosBlock.style.display = 'block'; // Affiche les recos si cachées
+                    }
+                    setTimeout(function(){
+                        modal.style.display = 'none';
+                        modal.style.visibility = 'hidden';
+                        form.reset();
+                        form.querySelector('.reco-confirm').textContent = '';
+                    }, 900);
+                });
+            });
+        }
+        // Suppression dynamique d'une recommandation
+        document.addEventListener('click', function(e) {
+            if(e.target && e.target.classList.contains('delete-reco-btn')) {
+                var ep = e.target.getAttribute('data-ep');
+                var idx = e.target.getAttribute('data-idx');
+                fetch('/delete_reco', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'episode_title=' + encodeURIComponent(ep) + '&idx=' + encodeURIComponent(idx)
+                }).then(r => r.ok ? Promise.resolve() : Promise.reject()).then(() => {
+                    var recoDiv = e.target.closest('.reco');
+                    if(recoDiv) recoDiv.remove();
+                });
+            }
+        });
+        // Toggle recommendations display
+        document.querySelectorAll('.show-recos-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var ep = btn.getAttribute('data-ep');
+                var recos = document.querySelector(".recos[data-ep='"+ep+"']");
+                if(recos) recos.style.display = (recos.style.display === 'none' ? 'block' : 'none');
+            });
+        });
+    });
+    </script>
+</head>
+<body>
+    <div class="main-container">
+        <h1>Épisodes du podcast</h1>
+        {global_reco_modal}
+        <div class='cards'>
+            {cards}
+        </div>
+    </div>
+</body>
+</html>
